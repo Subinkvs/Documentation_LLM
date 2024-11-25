@@ -1,4 +1,7 @@
 import pdfplumber
+import nltk
+nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
 from transformers import pipeline
 
 pdf_path = "C:/Users/USER/Downloads/google_terms_of_service_en_in.pdf"
@@ -26,3 +29,18 @@ summarizer = pipeline("summarization", model="t5-small")
 
 summary = summarizer(extracted_text[:1000], max_length=150, min_length=30, do_sample=False)
 print("Summary:", summary[0]['summary_text'])
+
+sentences = sent_tokenize(extracted_text)
+
+passages = []
+current_passage = ""
+
+for sentence in sentences:
+    if len(current_passage.split()) + len(sentence.split()) < 200:
+        current_passage += " " + sentence
+    else:
+        passages.append(current_passage.strip())
+        current_passage = sentence
+        
+if current_passage:
+    passages.append(current_passage.strip())
