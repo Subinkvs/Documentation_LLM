@@ -7,6 +7,7 @@ from transformers import pipeline
 pdf_path = "C:/Users/USER/Downloads/google_terms_of_service_en_in.pdf"
 
 output_text_file = "extracted_text.txt"
+qg_pipeline = pipeline("text2text-generation", model="valhalla/t5-base-qg-hl")
 
 with pdfplumber.open(pdf_path) as pdf:
     extracted_text = ""
@@ -44,3 +45,13 @@ for sentence in sentences:
         
 if current_passage:
     passages.append(current_passage.strip())
+    
+    
+
+def generate_questions_pipeline(passage, min_questions=3):
+    input_text = f"generate questions: {passage}"
+    results = qg_pipeline(input_text)
+    questions = results[0]['generated_text'].split('<sep>')
+    
+    
+    questions = [q.strip() for q in questions if q.strip()]
