@@ -1,12 +1,15 @@
 import pdfplumber
 import nltk
 nltk.download('punkt')
+nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
 from transformers import pipeline
 
 pdf_path = "C:/Users/USER/Downloads/google_terms_of_service_en_in.pdf"
 
 output_text_file = "extracted_text.txt"
+
+# Load the question generation pipeline
 qg_pipeline = pipeline("text2text-generation", model="valhalla/t5-base-qg-hl")
 
 with pdfplumber.open(pdf_path) as pdf:
@@ -47,11 +50,36 @@ if current_passage:
     passages.append(current_passage.strip())
     
     
-
+# function to generate questions using the pipeline
 def generate_questions_pipeline(passage, min_questions=3):
     input_text = f"generate questions: {passage}"
     results = qg_pipeline(input_text)
     questions = results[0]['generated_text'].split('<sep>')
     
-    
+    # ensure we have atleat 3 questions
     questions = [q.strip() for q in questions if q.strip()]
+    
+    # if fewer than 3 questions, try to regenerate from smaller parts of the passage
+    if len(questions) < min_questions:
+        passage_sentences = passage.split('. ')
+        for i in range(len(passage_sentences)):
+            if len(questions) >= min_questions:
+                break
+            
+            additional_input = ' '.join(passage_sentences[i:i+2])
+            additional_results = qg_pipeline(f"generate questions: {additional_input}")
+            additional_questions = additional_results[0]['generated_text'].split('<sep>')
+            questions.extend([q.strip() for q in additional_questions if q.strip()])
+    
+    return questions[:min_questions] # return only top 3 questions
+
+
+# generate questions from passages
+for idx, passage in enumerate(passages):
+    questions = generate_questions_pipeline(passage)
+    print(f"Passage {idx+1}:\n{passage}\n")
+    print(f"Generated Questions: ")
+    for q in questions:
+        print(f"- {q}")
+    print(f"\n{'-'*50}\n")
+        
