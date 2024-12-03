@@ -19,6 +19,7 @@ OUTPUT_TEXT_FILE = "extracted_text.txt"
 qg_pipeline = pipeline("text2text-generation", model="valhalla/t5-base-qg-hl")  # Question generation pipeline
 summarizer = pipeline("summarization", model="t5-small")  # Summarization pipeline
 
+qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2") # Load the QA pipeline
 
 def extract_text_from_pdf(pdf_path):
     """
@@ -142,3 +143,20 @@ if __name__ == "__main__":
         for q in questions:
             print(f"- {q}")
         print(f"\n{'-' * 50}\n")
+        
+# function to track and answer only unique questions    
+def answer_unique_questions(passages, qa_pipeline):
+    answered_questions = set() # to store unique questions
+    
+    for idx, passage in enumerate(passages):
+        questions = generate_questions_pipeline(passage) 
+    
+    for question in questions:
+        if question not in answered_questions: # check if the question has already been answered
+            answer =qa_pipeline({'question': question, 'context': passage})
+            print(f"Q: {question}")
+            print(f"A: {answer['answer']}\n")
+            answered_questions.add(question)  # add the question to the set to avoid repetition
+    print(f"{'='*50}\n")
+    
+answer_unique_questions(passages, qa_pipeline)
